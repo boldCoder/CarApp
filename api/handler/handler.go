@@ -8,6 +8,8 @@ import (
 	"github.com/CarApp/internal/model"
 	"github.com/CarApp/internal/services"
 	"github.com/CarApp/internal/utils"
+
+	"github.com/google/uuid"
 )
 
 type service struct {
@@ -109,7 +111,7 @@ func (s *service) listAllCars(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if len(response) == 0{
+	if len(response) == 0 {
 		utils.ReturnJsonResponse(w, http.StatusNotFound, []byte(`{"message: No Record(s) present in store"}`))
 		return
 	}
@@ -118,6 +120,7 @@ func (s *service) listAllCars(w http.ResponseWriter, req *http.Request) {
 
 }
 
+// Add new car record in store
 func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		// Add the response return message
@@ -131,7 +134,7 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var carsData []model.Car
+	var carsData []*model.Car
 	defer req.Body.Close()
 
 	if err := json.NewDecoder(req.Body).Decode(&carsData); err != nil {
@@ -144,6 +147,11 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 
 		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
 		return
+	}
+
+	// Provide unique id's to each record
+	for _, value := range carsData {
+		value.Id = uuid.NewString()
 	}
 
 	byteData, err := json.Marshal(carsData)
