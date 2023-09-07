@@ -28,6 +28,7 @@ func (s *service) listCarDetails(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+			"code": 405,
 			"success": false,
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
@@ -40,6 +41,7 @@ func (s *service) listCarDetails(w http.ResponseWriter, req *http.Request) {
 	if _, ok := req.URL.Query()["id"]; !ok {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+		 "code": 500,
 		 "success": false,
 		 "message": "This method requires unique id",
 		}`)
@@ -53,6 +55,7 @@ func (s *service) listCarDetails(w http.ResponseWriter, req *http.Request) {
 	response := s.svc.ListCar(id)
 	if response == nil {
 		HandlerMessage := []byte(`{
+			"code": 404,
 			"success": false,
 			"message": "No car records found against this ID",
 		   }`)
@@ -65,6 +68,7 @@ func (s *service) listCarDetails(w http.ResponseWriter, req *http.Request) {
 	byteData, err := json.Marshal(response)
 	if err != nil {
 		HandlerMessage := []byte(fmt.Sprintf(`{
+			"code": 500,
 			"success": false,
 			"message": "%s",
 		   }`, err.Error()))
@@ -81,6 +85,7 @@ func (s *service) listAllCars(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+			"code": 405,
 			"success": false,
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
@@ -94,6 +99,7 @@ func (s *service) listAllCars(w http.ResponseWriter, req *http.Request) {
 	byteData, err := json.Marshal(response)
 	if err != nil {
 		HandlerMessage := []byte(fmt.Sprintf(`{
+			"code": 500,
 			"success": false,
 			"message": "%s",
 		   }`, err.Error()))
@@ -103,6 +109,10 @@ func (s *service) listAllCars(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if len(response) == 0{
+		utils.ReturnJsonResponse(w, http.StatusNotFound, []byte(`{"message: No Record(s) present in store"}`))
+		return
+	}
 	// Return response in JSON with http-status and message
 	utils.ReturnJsonResponse(w, http.StatusOK, byteData)
 
@@ -112,6 +122,7 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+			"code": 405,
 			"success": false,
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
@@ -126,6 +137,7 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewDecoder(req.Body).Decode(&carsData); err != nil {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+			"code": 500,
 			"success": false,
 			"message": "Error parsing the movie data",
    		}`)
@@ -137,6 +149,7 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	byteData, err := json.Marshal(carsData)
 	if err != nil {
 		HandlerMessage := []byte(fmt.Sprintf(`{
+			"code": 500,
 			"success": false,
 			"message": "%s",
 		   }`, err.Error()))
@@ -149,6 +162,7 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	s.svc.Details = byteData
 	if err = s.svc.AddCarDetails(); err != nil {
 		HandlerMessage := []byte(fmt.Sprintf(`{
+			"code": 500,
 			"success": false,
 			"message": "%s",
 		   }`, err.Error()))
@@ -159,6 +173,7 @@ func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	}
 
 	successMessage := []byte(fmt.Sprintf(`{
+		"code": 200,
 		"success": true,
 		"message": "Data stored successfully",
 		"count": %d,
@@ -172,6 +187,7 @@ func (s *service) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "PUT" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+			"code": 405,
 			"success": false,
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
@@ -187,6 +203,7 @@ func (s *service) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewDecoder(req.Body).Decode(&carData); err != nil {
 		// Add the response return message
 		HandlerMessage := []byte(`{
+			code: 500,
 			"success": false,
 			"message": "Error parsing the car data",
    		}`)
@@ -199,6 +216,7 @@ func (s *service) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 	if err := s.svc.UpdateCarDetails(carData); err != nil {
 		// Add the response return message
 		HandlerMessage := []byte(fmt.Sprintf(`{
+			"code": 404,
 			"success": false,
 			"message": "%s",
    		}`, err))
@@ -208,6 +226,12 @@ func (s *service) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	successMessage := []byte(`{
+		"code": 200,
+		"success": true,
+		"message": "Data Updated successfully",
+	   }`)
+
 	// Return response in JSON with http-status and message
-	utils.ReturnJsonResponse(w, http.StatusOK, []byte("Data updated successfully"))
+	utils.ReturnJsonResponse(w, http.StatusOK, successMessage)
 }

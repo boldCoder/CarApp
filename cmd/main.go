@@ -15,9 +15,3 @@ func main() {
 	// http Listen 
 	log.Fatal(http.ListenAndServe(":9000", nil))
 }
-
-
-/* Pending
-1. Logs
-2. Tests
-*/
