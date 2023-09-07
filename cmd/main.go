@@ -9,9 +9,10 @@ import (
 )
 
 func main() {
-	// register handlers
 	strr := services.NewService()
+	// register handlers
 	handler.HandlerRequests(strr)
+	// http Listen 
 	log.Fatal(http.ListenAndServe(":9000", nil))
 }
 

@@ -10,19 +10,21 @@ import (
 	"github.com/CarApp/internal/utils"
 )
 
-type svc struct {
-	ddd *services.CarRepo
+type service struct {
+	svc *services.CarRepo
 }
 
+// Register requests
 func HandlerRequests(repo *services.CarRepo) {
-	exp := svc{repo}
-	http.HandleFunc("/", exp.listCarsDetails)
+	exp := service{repo}
+	http.HandleFunc("/get", exp.listCarDetails)
 	http.HandleFunc("/all", exp.listAllCars)
 	http.HandleFunc("/add", exp.addCarsDetails)
 	http.HandleFunc("/update", exp.updateCarDetails)
 }
 
-func (s *svc) listCarsDetails(w http.ResponseWriter, req *http.Request) {
+func (s *service) listCarDetails(w http.ResponseWriter, req *http.Request) {
+	// Check if request method is not GET
 	if req.Method != "GET" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
@@ -30,6 +32,7 @@ func (s *svc) listCarsDetails(w http.ResponseWriter, req *http.Request) {
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusMethodNotAllowed, HandlerMessage)
 		return
 	}
@@ -41,31 +44,40 @@ func (s *svc) listCarsDetails(w http.ResponseWriter, req *http.Request) {
 		 "message": "This method requires unique id",
 		}`)
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
 		return
 	}
 
 	id := req.URL.Query()["id"][0]
-	response := s.ddd.ListCar(id)
+	response := s.svc.ListCar(id)
 	if response == nil {
 		HandlerMessage := []byte(`{
 			"success": false,
 			"message": "No car records found against this ID",
 		   }`)
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusNotFound, HandlerMessage)
 		return
 	}
+
 	byteData, err := json.Marshal(response)
 	if err != nil {
-		fmt.Printf("%s", err)
+		HandlerMessage := []byte(fmt.Sprintf(`{
+			"success": false,
+			"message": "%s",
+		   }`, err.Error()))
+
+		// Return response in JSON with http-status and message
+		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
 		return
 	}
-
+	// Return response in JSON with http-status and message
 	utils.ReturnJsonResponse(w, http.StatusOK, byteData)
 }
 
-func (s *svc) listAllCars(w http.ResponseWriter, req *http.Request) {
+func (s *service) listAllCars(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
@@ -73,21 +85,30 @@ func (s *svc) listAllCars(w http.ResponseWriter, req *http.Request) {
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusMethodNotAllowed, HandlerMessage)
 		return
 	}
 
-	response := s.ddd.ListAll()
+	response := s.svc.ListAll()
 	byteData, err := json.Marshal(response)
 	if err != nil {
-		fmt.Printf("%s", err)
+		HandlerMessage := []byte(fmt.Sprintf(`{
+			"success": false,
+			"message": "%s",
+		   }`, err.Error()))
+
+		// Return response in JSON with http-status and message
+		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
 		return
 	}
+
+	// Return response in JSON with http-status and message
 	utils.ReturnJsonResponse(w, http.StatusOK, byteData)
 
 }
 
-func (s *svc) addCarsDetails(w http.ResponseWriter, req *http.Request) {
+func (s *service) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
@@ -113,10 +134,29 @@ func (s *svc) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	byteData, err := json.Marshal(carsData)
+	if err != nil {
+		HandlerMessage := []byte(fmt.Sprintf(`{
+			"success": false,
+			"message": "%s",
+		   }`, err.Error()))
+
+		// Return response in JSON with http-status and message
+		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
+		return
+	}
 	// Store it in DB
-	byteData, _ := json.Marshal(carsData)
-	s.ddd.Dataa = byteData
-	_ = s.ddd.AddCarDetails()
+	s.svc.Details = byteData
+	if err = s.svc.AddCarDetails(); err != nil {
+		HandlerMessage := []byte(fmt.Sprintf(`{
+			"success": false,
+			"message": "%s",
+		   }`, err.Error()))
+
+		// Return response in JSON with http-status and message
+		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
+		return
+	}
 
 	successMessage := []byte(fmt.Sprintf(`{
 		"success": true,
@@ -124,10 +164,11 @@ func (s *svc) addCarsDetails(w http.ResponseWriter, req *http.Request) {
 		"count": %d,
 	   }`, len(carsData)))
 
+	// Return response in JSON with http-status and message
 	utils.ReturnJsonResponse(w, http.StatusOK, successMessage)
 }
 
-func (s *svc) updateCarDetails(w http.ResponseWriter, req *http.Request) {
+func (s *service) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "PUT" {
 		// Add the response return message
 		HandlerMessage := []byte(`{
@@ -135,6 +176,7 @@ func (s *svc) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 			"message": "Check your HTTP method: Invalid HTTP method executed",
 		   }`)
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusMethodNotAllowed, HandlerMessage)
 		return
 	}
@@ -149,20 +191,23 @@ func (s *svc) updateCarDetails(w http.ResponseWriter, req *http.Request) {
 			"message": "Error parsing the car data",
    		}`)
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusInternalServerError, HandlerMessage)
 		return
 	}
 
-	if err := s.ddd.UpdateCarDetails(carData); err != nil {
+	if err := s.svc.UpdateCarDetails(carData); err != nil {
 		// Add the response return message
 		HandlerMessage := []byte(fmt.Sprintf(`{
 			"success": false,
 			"message": "%s",
    		}`, err))
 
+		// Return response in JSON with http-status and message
 		utils.ReturnJsonResponse(w, http.StatusNotFound, HandlerMessage)
 		return
 	}
 
+	// Return response in JSON with http-status and message
 	utils.ReturnJsonResponse(w, http.StatusOK, []byte("Data updated successfully"))
 }

@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/CarApp/internal/model"
 )
@@ -16,42 +15,48 @@ type CarService interface {
 }
 
 type CarRepo struct {
-	Dataa     []byte
-	StoreData map[string][]model.Car
+	Details     []byte
+	DataStore map[string][]model.Car
 }
 
 func NewService() *CarRepo {
 	return &CarRepo{}
 }
 
+// Add new car details.
 func (c *CarRepo) AddCarDetails() error {
-	var err error
-	if len(c.StoreData) == 0 {
-		c.StoreData = map[string][]model.Car{}
+	// Check if it is an empty map. If yes, initialize the map.
+	if len(c.DataStore) == 0 {
+		c.DataStore = map[string][]model.Car{}
 	}
 
 	var store []model.Car
-	_ = json.Unmarshal(c.Dataa, &store)
+	err := json.Unmarshal(c.Details, &store)
+	if err != nil {
+		return err
+	}
 
 	for _, value := range store {
-		c.StoreData[value.Make] = append(c.StoreData[value.Make], value)
+		c.DataStore[value.Make] = append(c.DataStore[value.Make], value)
 	}
 
 	return err
 }
 
+// List all cars stored in the DB
 func (c *CarRepo) ListAll() []model.Car {
 	var output []model.Car
 
-	for _, value := range c.StoreData {
+	for _, value := range c.DataStore {
 		output = append(output, value...)
 	}
 
 	return output
 }
 
+// List car details with the unique ID associated with it.
 func (c *CarRepo) ListCar(key string) *model.Car {
-	for _, value := range c.StoreData {
+	for _, value := range c.DataStore {
 		for _, check := range value {
 			if check.Id == key {
 				return &check
@@ -62,18 +67,17 @@ func (c *CarRepo) ListCar(key string) *model.Car {
 	return nil
 }
 
+// Update car details for a specific car
 func (c *CarRepo) UpdateCarDetails(data model.Car) error {
-	for key, value := range c.StoreData {
+	for key, value := range c.DataStore {
 		if key == data.Make {
-
 			for index, check := range value {
-				fmt.Println("[DEBUG]:", check)
 				if check.Id == data.Id {
 					check.Category = data.Category
 					check.Mileage = data.Mileage
 					check.Price = data.Price
 					check.Year = data.Year
-					c.StoreData[check.Make][index] = check
+					c.DataStore[check.Make][index] = check
 					return nil
 				}
 			}
